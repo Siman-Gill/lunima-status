@@ -2,14 +2,12 @@
   publish   = "public"
   functions = "netlify/functions"
 
-# /api/status?token=... -> the serverless function
 [[redirects]]
   from   = "/api/status"
   to     = "/.netlify/functions/status"
   status = 200
 
-# /s/<token> -> the status page (URL stays intact so the page can read the token)
 [[redirects]]
   from   = "/s/*"
-  to     = "/s/index.html"
+  to     = "/status.html"
   status = 200
