@@ -2,12 +2,26 @@
   publish   = "public"
   functions = "netlify/functions"
 
+# dashboard data
 [[redirects]]
   from   = "/api/status"
   to     = "/.netlify/functions/status"
   status = 200
 
+# installer download + agent polling  ← new
+[[redirects]]
+  from   = "/api/install"
+  to     = "/.netlify/functions/install"
+  status = 200
+
+# client dashboard
 [[redirects]]
   from   = "/s/*"
   to     = "/status.html"
+  status = 200
+
+# install page  ← new
+[[redirects]]
+  from   = "/setup/*"
+  to     = "/install.html"
   status = 200
