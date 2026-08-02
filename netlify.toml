@@ -20,8 +20,7 @@
   to     = "/status.html"
   status = 200
 
-# install page  ← new
 [[redirects]]
-  from   = "/setup/*"
-  to     = "/install.html"
+  from   = "/setup/:token"
+  to     = "/install.html?t=:token"
   status = 200
