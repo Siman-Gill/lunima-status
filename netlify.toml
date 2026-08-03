@@ -29,3 +29,8 @@
   from = "/signup"
   to = "/signup.html"
   status = 200
+
+[[redirects]]
+  from = "/setup/:token"
+  to = "/signup.html?t=:token"
+  status = 200
