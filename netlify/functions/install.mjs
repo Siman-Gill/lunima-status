@@ -1,188 +1,206 @@
 // netlify/functions/install.mjs
+// Two jobs:
+//   ?token=X&os=windows&download=1  -> streams a pre-keyed launcher script
+//   ?token=X                        -> returns JSON agent list for polling
 //
-// Two jobs, both keyed to a per-client install token:
-//   ?action=download  -> generates a pre-keyed installer for that client
-//   ?action=status    -> reports which machines have connected so far
-//
-// Your Huntress ACCOUNT KEY lives only here, on the server.
-// It is written into the generated installer at download time.
+// The launcher downloads the real Huntress agent from Huntress and
+// registers it to this client's organisation. Huntress will not let you
+// host their binary (the account key is part of their download URL),
+// so a launcher script is the correct approach.
 
-const HUNTRESS_PS1 =
-  'https://raw.githubusercontent.com/huntresslabs/deployment-scripts/main/Powershell/InstallHuntress.powershellv2.ps1';
+import { getClientByInstallToken } from '../lib/clients.mjs';
 
 export default async (req) => {
   const url = new URL(req.url);
-  const token = url.searchParams.get('t');
-  const action = url.searchParams.get('action') || 'status';
-  const platform = (url.searchParams.get('os') || 'windows').toLowerCase();
+  const token = url.searchParams.get('token') || url.searchParams.get('t');
+  const os = (url.searchParams.get('os') || 'windows').toLowerCase();
+  const wantsDownload = url.searchParams.get('download') === '1';
 
-  const json = (body, status = 200) =>
-    new Response(JSON.stringify(body), {
-      status,
+  const json = (b, s = 200) =>
+    new Response(JSON.stringify(b), {
+      status: s,
       headers: { 'content-type': 'application/json' }
     });
 
-  // ── Look up the client by install token ──────────────────
-  let clients = {};
-  try {
-    clients = JSON.parse(process.env.CLIENTS || '{}');
-  } catch {
-    return json({ error: 'CLIENTS env var is not valid JSON' }, 500);
-  }
+  if (!token) return json({ error: 'no_token' }, 400);
 
-  const entry = Object.values(clients).find((c) => c.installToken === token);
-  if (!token || !entry) return json({ error: 'not_found' }, 404);
+  const client = await getClientByInstallToken(token);
+  if (!client) return json({ error: 'not_found' }, 404);
 
   const acctKey = process.env.HUNTRESS_ACCOUNT_KEY;
-  if (!acctKey) return json({ error: 'HUNTRESS_ACCOUNT_KEY not set' }, 500);
+  if (!acctKey) return json({ error: 'account_key_not_set' }, 500);
 
-  const orgKey = entry.orgkey;
-  if (!orgKey) return json({ error: 'orgkey missing for this client' }, 500);
+  const orgKey = client.orgkey;
+  if (!orgKey) return json({ error: 'org_key_missing' }, 500);
 
-  // ═══════════════ DOWNLOAD ═══════════════
-  if (action === 'download') {
-    if (platform === 'windows') {
-      const safeName = (entry.name || 'your organisation').replace(/[<>|&^%"]/g, '');
+  // ---------------------------------------------------------
+  // MODE 1 - serve the pre-keyed launcher script
+  // ---------------------------------------------------------
+  if (wantsDownload) {
+    let body, filename;
 
-      const bat = [
+    if (os === 'windows') {
+      filename = 'LunimaGuard-Setup.bat';
+      const psCmd =
+        "(New-Object Net.WebClient).DownloadFile(" +
+        "'https://update.huntress.io/download/%AccountKey%/HuntressInstaller.exe'," +
+        "$env:temp+'\\HuntressInstaller.exe'); " +
+        "Start-Process -Wait -FilePath ($env:temp+'\\HuntressInstaller.exe') " +
+        "-ArgumentList '/ACCT_KEY=%AccountKey%','/ORG_KEY=%OrgKey%','/S'";
+
+      body = [
         '@echo off',
-        'setlocal',
-        'title Lunima Guard Setup',
-        '',
-        'REM  Lunima Guard installer',
-        `REM  Prepared for: ${safeName}`,
-        'REM  Questions? 647-552-3894 or shield@lunima.ca',
+        'REM =============================================',
+        'REM  Lunima Guard - endpoint protection installer',
+        'REM  Organisation: ' + client.name,
+        'REM  Support: 647-552-3894 / shield@lunima.ca',
+        'REM =============================================',
         '',
         'net session >nul 2>&1',
-        'if %errorlevel% neq 0 (',
-        '  echo   Requesting administrator permission...',
-        '  powershell -NoProfile -Command "Start-Process -FilePath \'%~f0\' -Verb RunAs"',
-        '  exit /b',
-        ')',
-        '',
-        `set "ACCT=${acctKey}"`,
-        `set "ORG=${orgKey}"`,
-        'set "PS1=%TEMP%\\LunimaGuardSetup.ps1"',
-        'set "SRC=https://raw.githubusercontent.com/huntresslabs/deployment-scripts/main/Powershell/InstallHuntress.powershellv2.ps1"',
-        '',
-        'echo.',
-        'echo   ===============================================',
-        'echo     LUNIMA GUARD',
-        `echo     Installing protection for ${safeName}`,
-        'echo   ===============================================',
-        'echo.',
-        'echo   This takes about a minute. Please leave this window open.',
-        'echo.',
-        '',
-        'echo   [1/2] Preparing setup files...',
-        'powershell -NoProfile -ExecutionPolicy Bypass -Command ^',
-        '  "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; ^',
-        '   (New-Object Net.WebClient).DownloadFile($env:SRC, $env:PS1)" 2>nul',
-        '',
-        'if not exist "%PS1%" (',
+        'if %errorLevel% NEQ 0 (',
         '  echo.',
-        '  echo   Could not reach the setup server.',
-        '  echo   Check this machine has internet access, then run this file again.',
-        '  echo   Still stuck? Call 647-552-3894 and we will do it with you.',
+        '  echo   This installer must be run as Administrator.',
+        '  echo   Right-click LunimaGuard-Setup.bat and choose',
+        '  echo   "Run as administrator", then try again.',
         '  echo.',
         '  pause',
         '  exit /b 1',
         ')',
         '',
-        'echo   [2/2] Installing and registering this machine...',
-        'powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%" -acctkey "%ACCT%" -orgkey "%ORG%"',
+        'echo.',
+        'echo   Installing Lunima Guard protection...',
+        'echo   This takes about a minute. Please wait.',
+        'echo.',
         '',
-        'if %errorlevel% neq 0 (',
-        '  echo.',
-        '  echo   Setup did not finish cleanly.',
-        '  echo   A log was saved to C:\\Windows\\temp\\HuntressPoShInstaller.log',
-        '  echo   Call 647-552-3894 and we will sort it out.',
-        '  echo.',
+        'SET "AccountKey=' + acctKey + '"',
+        'SET "OrgKey=' + orgKey + '"',
+        '',
+        'powershell -executionpolicy bypass -command "' + psCmd + '"',
+        '',
+        'if %errorLevel% NEQ 0 (',
+        '  echo   Installation failed. Call Lunima on 647-552-3894.',
         '  pause',
         '  exit /b 1',
         ')',
         '',
-        'del "%PS1%" >nul 2>&1',
         'echo.',
-        'echo   ===============================================',
-        'echo     Done. This machine is now protected.',
-        'echo     It appears on your Lunima dashboard within a minute.',
-        'echo   ===============================================',
+        'echo   Done. This machine is now protected.',
+        'echo   It appears on your Lunima dashboard within 60 seconds.',
         'echo.',
-        'timeout /t 10 >nul'
+        'timeout /t 8',
+        ''
       ].join('\r\n');
 
-      return new Response(bat, {
-        status: 200,
-        headers: {
-          'content-type': 'application/octet-stream',
-          'content-disposition': 'attachment; filename="LunimaGuard-Install.bat"',
-          'cache-control': 'no-store'
-        }
-      });
-    }
-
-    if (platform === 'mac') {
-      const sh = [
+    } else if (os === 'mac') {
+      filename = 'LunimaGuard-Setup.sh';
+      body = [
         '#!/bin/bash',
-        '#  Lunima Guard installer',
-        `#  Prepared for: ${entry.name || 'your organisation'}`,
-        '#  Questions? 647-552-3894 or shield@lunima.ca',
+        '# =============================================',
+        '#  Lunima Guard - endpoint protection installer',
+        '#  Organisation: ' + client.name,
+        '#  Support: 647-552-3894 / shield@lunima.ca',
+        '# =============================================',
         '',
         'set -e',
         '',
         'if [ "$EUID" -ne 0 ]; then',
-        '  echo "  Lunima Guard needs administrator permission."',
-        '  echo "  Run again with:  sudo bash LunimaGuard-Install.sh"',
+        '  echo ""',
+        '  echo "  This installer needs administrator rights."',
+        '  echo "  Run it like this instead:"',
+        '  echo ""',
+        '  echo "    sudo bash LunimaGuard-Setup.sh"',
+        '  echo ""',
         '  exit 1',
         'fi',
         '',
+        'ACCOUNT_KEY="' + acctKey + '"',
+        'ORG_KEY="' + orgKey + '"',
+        'INSTALLER="/tmp/HuntressMacInstall.sh"',
+        '',
         'echo ""',
-        'echo "  Lunima Guard"',
-        `echo "  Installing protection for ${(entry.name || 'your organisation').replace(/"/g, '')}"`,
+        'echo "  Installing Lunima Guard protection..."',
         'echo ""',
         '',
-        `ACCT_KEY="${acctKey}"`,
-        `ORG_KEY="${orgKey}"`,
+        'rm -f "$INSTALLER"',
+        'curl -fsSL "https://huntress.io/script/darwin/$ACCOUNT_KEY" -o "$INSTALLER"',
         '',
-        'TMP=$(mktemp -d)',
-        'curl -fsSL "https://update.huntress.io/darwin_installer" -o "$TMP/HuntressAgent.pkg"',
-        'installer -pkg "$TMP/HuntressAgent.pkg" -target /',
-        '/Applications/Huntress.app/Contents/MacOS/HuntressAgent --account_key="$ACCT_KEY" --organization_key="$ORG_KEY" || true',
-        'rm -rf "$TMP"',
+        'bash "$INSTALLER" --account_key "$ACCOUNT_KEY" --organization_key "$ORG_KEY"',
         '',
         'echo ""',
         'echo "  Done. This Mac is now protected."',
-        'echo "  It will appear on your Lunima dashboard within a minute."',
-        'echo ""'
+        'echo ""',
+        'echo "  ONE MORE STEP - macOS requires your approval:"',
+        'echo "  1. Open System Settings then Privacy and Security"',
+        'echo "  2. Click Allow next to the Huntress system extension"',
+        'echo "  3. Grant Full Disk Access when prompted"',
+        'echo ""',
+        'echo "  Without this the agent cannot see threats."',
+        'echo ""',
+        ''
       ].join('\n');
 
-      return new Response(sh, {
-        status: 200,
-        headers: {
-          'content-type': 'application/octet-stream',
-          'content-disposition': 'attachment; filename="LunimaGuard-Install.sh"',
-          'cache-control': 'no-store'
-        }
-      });
+    } else {
+      filename = 'LunimaGuard-Setup.sh';
+      body = [
+        '#!/bin/bash',
+        '# =============================================',
+        '#  Lunima Guard - endpoint protection installer',
+        '#  Organisation: ' + client.name,
+        '#  Support: 647-552-3894 / shield@lunima.ca',
+        '# =============================================',
+        '',
+        'set -e',
+        '',
+        'if [ "$EUID" -ne 0 ]; then',
+        '  echo "Run with sudo: sudo bash LunimaGuard-Setup.sh"',
+        '  exit 1',
+        'fi',
+        '',
+        'ACCOUNT_KEY="' + acctKey + '"',
+        'ORG_KEY="' + orgKey + '"',
+        'INSTALLER="/tmp/HuntressLinuxInstall.sh"',
+        '',
+        'echo ""',
+        'echo "  Installing Lunima Guard protection..."',
+        'echo ""',
+        '',
+        'rm -f "$INSTALLER"',
+        'curl -fsSL "https://huntress.io/script/linux/$ACCOUNT_KEY" -o "$INSTALLER"',
+        '',
+        'bash "$INSTALLER" --account_key "$ACCOUNT_KEY" --organization_key "$ORG_KEY"',
+        '',
+        'echo ""',
+        'echo "  Done. This server is now protected."',
+        'echo ""',
+        ''
+      ].join('\n');
     }
 
-    return json({ error: 'unsupported_platform' }, 400);
+    return new Response(body, {
+      status: 200,
+      headers: {
+        'content-type': 'application/octet-stream',
+        'content-disposition': 'attachment; filename="' + filename + '"',
+        'cache-control': 'no-store'
+      }
+    });
   }
 
-  // ═══════════════ STATUS ═══════════════
+  // ---------------------------------------------------------
+  // MODE 2 - agent polling for the deploy page
+  // ---------------------------------------------------------
   const key = process.env.HUNTRESS_API_KEY;
   const secret = process.env.HUNTRESS_API_SECRET;
-  if (!key || !secret) return json({ error: 'api_credentials_missing' }, 500);
+  if (!key || !secret) return json({ error: 'huntress_creds_missing' }, 500);
 
-  const auth = Buffer.from(`${key}:${secret}`).toString('base64');
+  const auth = Buffer.from(key + ':' + secret).toString('base64');
 
   try {
     const r = await fetch(
-      `https://api.huntress.io/v1/agents?organization_id=${entry.org}&limit=500`,
+      'https://api.huntress.io/v1/agents?organization_id=' + client.org + '&limit=500',
       { headers: { Authorization: 'Basic ' + auth } }
     );
-    if (!r.ok) throw new Error('Huntress ' + r.status);
+    if (!r.ok) throw new Error('huntress ' + r.status);
     const data = await r.json();
     const agents = data.agents || [];
 
@@ -190,16 +208,18 @@ export default async (req) => {
     const now = Date.now();
 
     return json({
-      company: entry.name || 'Your organisation',
-      plan: entry.plan || 'Lunima Guard',
-      orgKey,
-      connected: agents.length,
-      machines: agents.map((a) => {
+      company: client.name,
+      plan: client.plan,
+      orgKey: orgKey,
+      count: agents.length,
+      agents: agents.map((a) => {
         const last = a.last_callback_at ? new Date(a.last_callback_at).getTime() : 0;
         return {
           hostname: a.hostname || 'Unknown machine',
-          platform: a.platform || a.os || '—',
-          online: last > 0 && now - last < THIRTY_MIN
+          platform: a.platform || a.os || '-',
+          version: a.version || null,
+          online: last > 0 && now - last < THIRTY_MIN,
+          lastSeen: a.last_callback_at || null
         };
       })
     });
