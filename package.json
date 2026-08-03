@@ -1,0 +1,9 @@
+{
+  "name": "lunima-status",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0",
+    "stripe": "^17.5.0"
+  }
+}
