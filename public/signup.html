@@ -774,12 +774,46 @@ function fmtDate(iso){
 }
 
 /* ── INIT ── */
+/* ── INIT ── */
+async function loadSetupByToken(token){
+  S.installToken = token;
+  $('load-msg').textContent = 'Loading your installer…';
+  go('x-load');
+  try{
+    const res = await fetch(CFG.base+'/.netlify/functions/install?token='+encodeURIComponent(token));
+    if(!res.ok){ go('x1'); return; }
+    const d = await res.json();
+    S.acctKey = d.acctKey || '—';
+    S.orgKey  = d.orgKey  || '—';
+    S.company = d.company || '';
+    enterDeploy();
+    if(d.agents && d.agents.length) renderIncomingAgents(d.agents);
+    startInstallPolling(token);
+  }catch(e){ go('x1'); }
+}
+
+function startInstallPolling(token){
+  if(pollTimer) return;
+  pollCount = 0;
+  pollTimer = setInterval(async ()=>{
+    pollCount++;
+    if(pollCount > CFG.maxPolls){ clearInterval(pollTimer); pollTimer=null; return; }
+    try{
+      const res = await fetch(CFG.base+'/.netlify/functions/install?token='+encodeURIComponent(token));
+      if(!res.ok) return;
+      const d = await res.json();
+      renderIncomingAgents(d.agents||[]);
+    }catch(e){}
+  }, CFG.pollMs);
+}
+
 (function(){
   pickPlan('pro','Pro',2000);
-  // Deep link: ?code=LMA-XXXX-XXXX opens the dashboard directly
-  const p=new URLSearchParams(location.search);
-  if(p.get('code')){ S.code=p.get('code').toUpperCase(); loadDashboard(); }
-  else if(p.get('signin')!==null){ go('x0'); }
+  const p = new URLSearchParams(location.search);
+  const t = p.get('t') || p.get('token');
+  if(t){ loadSetupByToken(t); }
+  else if(p.get('code')){ S.code = p.get('code').toUpperCase(); loadDashboard(); }
+  else if(p.get('signin') !== null){ go('x0'); }
 })();
 </script>
 </body>
