@@ -211,6 +211,7 @@ export default async (req) => {
       company: client.name,
       plan: client.plan,
       orgKey: orgKey,
+      acctKey: acctKey,
       count: agents.length,
       agents: agents.map((a) => {
         const last = a.last_callback_at ? new Date(a.last_callback_at).getTime() : 0;
