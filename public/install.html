@@ -159,13 +159,9 @@
       </div>
     </div>
 
-    <div style="text-align:center;padding:10px 0 20px" id="finish" hidden>
-      <div class="callout" style="text-align:left">
-        <strong>You're protected.</strong><br>
-        Monitoring started the moment your first machine connected. Siman is confirming every machine is reporting correctly, then your dashboard access code arrives by email.
-      </div>
-    </div>
+    <div id="finish" hidden></div>
   </div>
+</div>
 </div>
 
 <footer class="wrap">
@@ -174,7 +170,14 @@
 </footer>
 
 <script>
-var TOKEN = new URLSearchParams(location.search).get('t') || '';
+var TOKEN = (function(){
+  // token can arrive as ?t=CODE or as the last part of /setup/CODE
+  var q = new URLSearchParams(location.search).get('t');
+  if (q) return q;
+  var parts = location.pathname.split('/').filter(Boolean);
+  var last = parts[parts.length - 1] || '';
+  return (last === 'setup' || last === 'install.html') ? '' : last;
+})();
 var OS = 'windows';
 var data = null;
 
@@ -220,6 +223,13 @@ function renderOS(){
   document.getElementById('rmnote').style.display = OS === 'windows' ? 'block' : 'none';
 }
 
+function cpText(t, btn){
+  navigator.clipboard.writeText(t).then(function(){
+    var o = btn.textContent; btn.textContent = 'Copied';
+    setTimeout(function(){ btn.textContent = o; }, 1400);
+  });
+}
+
 function copyCmd(btn){
   var t = document.getElementById('rmcmd').textContent;
   navigator.clipboard.writeText(t).then(function(){
@@ -233,7 +243,10 @@ function poll(){
     .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
     .then(function(res){
       if (!res.ok || res.d.error){
-        if (res.d.error === 'not_found'){
+        if (res.d.error === 'payment_incomplete'){
+          showError('Payment not completed',
+            'Finish checkout and this page will be ready. Call 647-552-3894 if you need a hand.');
+        } else if (res.d.error === 'not_found'){
           showError('This setup link is not active',
             'It may have expired, or the address is incomplete. Call 647-552-3894 and we will send a fresh one.');
         } else if (res.d.error === 'huntress_unreachable'){
@@ -256,11 +269,31 @@ function poll(){
       var live = document.getElementById('live');
       var list = document.getElementById('machines');
 
+      // Access code appears the moment the first machine is protected
+      var fin = document.getElementById('finish');
+      if (data.dashboardCode) {
+        fin.hidden = false;
+        fin.innerHTML =
+          '<div class="card card-teal" style="text-align:left">' +
+            '<div class="ih"><div class="inum done">&#10003;</div>' +
+            '<h3>You are protected — here is your dashboard</h3></div>' +
+            '<p style="font-size:14px;margin-bottom:14px">Monitoring started the moment your first ' +
+            'machine connected. Real analysts are watching now.</p>' +
+            '<div class="keyrow"><div><div class="k">Your access code</div>' +
+            '<div class="v" style="font-size:16px;letter-spacing:1px">' + data.dashboardCode + '</div></div>' +
+            '<button class="copy" onclick="cpText(\'' + data.dashboardCode + '\',this)">Copy</button></div>' +
+            '<div class="btn-row" style="margin-top:16px">' +
+            '<a class="btn btn-primary" href="/">Open my dashboard</a>' +
+            '<span class="small">Also emailed to you</span></div>' +
+          '</div>';
+      } else {
+        fin.hidden = true;
+      }
+
       if (!data.connected){
         live.className = 'live';
         live.innerHTML = '<span class="spin"></span>Waiting for the first machine to connect…';
         list.innerHTML = '';
-        document.getElementById('finish').hidden = true;
       } else {
         live.className = 'live hit';
         live.innerHTML = '<span class="dot pulse"></span><span><strong>' + data.connected +
@@ -271,7 +304,6 @@ function poll(){
                  '<span class="pf">' + m.platform + '</span>' +
                  '<span class="st">' + (m.online ? 'Protected' : 'Connected') + '</span></div>';
         }).join('');
-        document.getElementById('finish').hidden = false;
       }
     })
     .catch(function(){
