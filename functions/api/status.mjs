@@ -1,4 +1,5 @@
-// functions/status.mjs
+// functions/api/status.mjs
+// Reachable at /api/status
 import { getClientByCode } from '../lib/clients.mjs';
 
 export async function onRequestGet(context) {
