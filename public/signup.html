@@ -595,7 +595,7 @@ function downloadAgent(){
       setTimeout(()=>b.textContent='↓ Download installer',3000);},900);
     return;
   }
-  window.location.href = CFG.base+'/install?token='
+  window.location.href = CFG.base+'/api/install?token='
     +encodeURIComponent(S.installToken)+'&os='+S.os+'&download=1';
   b.textContent='✓ Downloaded — now run it';
   setTimeout(()=>b.textContent='↓ Download installer',4000);
@@ -776,7 +776,7 @@ async function loadSetupByToken(token){
   $('load-msg').textContent = 'Loading your installer…';
   go('x-load');
   try{
-    const res = await fetch(CFG.base+'/install?token='+encodeURIComponent(token));
+    const res = await fetch(CFG.base+'/api/install?token='+encodeURIComponent(token));
     if(!res.ok){ go('x1'); return; }
     const d = await res.json();
     S.acctKey = d.acctKey || '—';
@@ -795,7 +795,7 @@ function startInstallPolling(token){
     pollCount++;
     if(pollCount > CFG.maxPolls){ clearInterval(pollTimer); pollTimer=null; return; }
     try{
-      const res = await fetch(CFG.base+'/install?token='+encodeURIComponent(token));
+      const res = await fetch(CFG.base+'/api/install?token='+encodeURIComponent(token));
       if(!res.ok) return;
       const d = await res.json();
       renderIncomingAgents(d.agents||[]);
