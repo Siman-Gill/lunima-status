@@ -1,4 +1,5 @@
-// functions/install.mjs
+// functions/api/install.mjs
+// Reachable at /api/install
 import { getClientByInstallToken } from '../lib/clients.mjs';
 
 export async function onRequestGet(context) {
@@ -103,7 +104,7 @@ export async function onRequestGet(context) {
         const last = a.last_callback_at ? new Date(a.last_callback_at).getTime() : 0;
         return {
           hostname: a.hostname || 'Unknown machine',
-          platform: a.platform || a.os || '—',
+          platform: a.platform || a.os || '-',
           version: a.version || null,
           online: last > 0 && now - last < THIRTY_MIN,
           lastSeen: a.last_callback_at || null
