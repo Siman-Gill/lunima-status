@@ -13,7 +13,7 @@ export async function onRequestGet(context) {
   const url = new URL(request.url);
   const token = url.searchParams.get('token');
 
-  const client = getClientByCode(env, token);
+  const client = await getClientByCode(env, token);
   if (!client) return json({ error: 'not_found' }, 404);
 
   const key = env.HUNTRESS_API_KEY;
