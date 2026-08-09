@@ -14,7 +14,7 @@ export async function onRequestGet(context) {
 
   if (!token) return json({ error: 'no_token' }, 400);
 
-  const client = getClientByInstallToken(env, token);
+  const client = await getClientByInstallToken(env, token);
   if (!client) return json({ error: 'not_found' }, 404);
 
   const acctKey = env.HUNTRESS_ACCOUNT_KEY;
