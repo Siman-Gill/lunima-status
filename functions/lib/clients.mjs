@@ -1,25 +1,70 @@
 // functions/lib/clients.mjs
-// Same job as before, but reads CLIENTS from Cloudflare's env object
-// instead of process.env, since Workers don't have process.env.
+// KV-backed client store. Falls back to the CLIENTS env var so
+// manually-added clients (like LMA-TEST-1234) keep working.
 
-function allClients(env) {
-  try {
-    return JSON.parse(env.CLIENTS || '{}');
-  } catch (e) {
-    console.error('CLIENTS env var is not valid JSON');
-    return {};
-  }
+function legacy(env) {
+  try { return JSON.parse(env.CLIENTS || '{}'); }
+  catch { return {}; }
 }
 
-export function getClientByCode(env, code) {
+export async function getClientByCode(env, code) {
   if (!code) return null;
-  return allClients(env)[code] || null;
+  if (env.CLIENTS_KV) {
+    const rec = await env.CLIENTS_KV.get('client:' + code, { type: 'json' });
+    if (rec) return rec;
+  }
+  return legacy(env)[code] || null;
 }
 
-export function getClientByInstallToken(env, installToken) {
-  if (!installToken) return null;
-  const found = Object.values(allClients(env)).find(
-    (c) => c && c.installToken === installToken
-  );
+export async function getClientByInstallToken(env, token) {
+  if (!token) return null;
+  if (env.CLIENTS_KV) {
+    const code = await env.CLIENTS_KV.get('install:' + token);
+    if (code) {
+      const rec = await env.CLIENTS_KV.get('client:' + code, { type: 'json' });
+      if (rec) return rec;
+    }
+  }
+  const found = Object.values(legacy(env)).find(c => c && c.installToken === token);
   return found || null;
+}
+
+export async function saveClient(env, code, record) {
+  if (!env.CLIENTS_KV) throw new Error('KV not bound');
+  await env.CLIENTS_KV.put('client:' + code, JSON.stringify(record));
+  if (record.installToken) {
+    await env.CLIENTS_KV.put('install:' + record.installToken, code);
+  }
+  return record;
+}
+
+export async function listClients(env) {
+  if (!env.CLIENTS_KV) return [];
+  const { keys } = await env.CLIENTS_KV.list({ prefix: 'client:' });
+  const out = [];
+  for (const k of keys) {
+    const rec = await env.CLIENTS_KV.get(k.name, { type: 'json' });
+    if (rec) out.push({ code: k.name.replace('client:', ''), ...rec });
+  }
+  return out;
+}
+
+export async function claimPoolOrg(env) {
+  if (!env.CLIENTS_KV) return null;
+  const pool = (await env.CLIENTS_KV.get('pool:available', { type: 'json' })) || [];
+  if (!pool.length) return null;
+  const slot = pool.shift();
+  await env.CLIENTS_KV.put('pool:available', JSON.stringify(pool));
+  return slot;
+}
+
+export async function getPool(env) {
+  if (!env.CLIENTS_KV) return [];
+  return (await env.CLIENTS_KV.get('pool:available', { type: 'json' })) || [];
+}
+
+export async function setPool(env, list) {
+  if (!env.CLIENTS_KV) throw new Error('KV not bound');
+  await env.CLIENTS_KV.put('pool:available', JSON.stringify(list));
+  return list;
 }
