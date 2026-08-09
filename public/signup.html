@@ -221,7 +221,7 @@ tr:last-child td{border-bottom:none}
 <div class="r2">
 <div class="fd"><label>Phone</label><input id="i-ph" type="tel" placeholder="(000) 000-0000" autocomplete="tel"></div>
 <div class="fd"><label>Endpoints</label><select id="i-ep">
-<option value="basic">Under 20</option><option value="pro" selected>20 – 75</option><option value="enterprise">76 or more</option></select></div></div>
+<option value="basic">Up to 20</option><option value="pro" selected>20 – 75</option><option value="enterprise">76 or more</option></select></div></div>
 <div class="fd"><label>Password</label><input id="i-pw" type="password" placeholder="At least 12 characters" autocomplete="new-password">
 <div class="hint">Used to sign back in and manage billing.</div></div>
 <div class="er" id="e1"></div>
@@ -277,10 +277,9 @@ tr:last-child td{border-bottom:none}
 <div class="pad">
 <div style="text-align:center">
 <div class="lg"><span class="mk"><i></i><i></i></span>LUNIMA</div>
-<span class="eb">Payment confirmed ✓</span>
+<span class="eb">Your organisation</span>
 <h2>Download &amp; install your agent</h2>
 <p class="sb">Install on every machine you want protected. About two minutes each.</p></div>
-<div class="stp"><span class="sn d">✓</span><span class="sl">Account</span><span class="sq"></span><span class="sn d">✓</span><span class="sl">Plan</span><span class="sq"></span><span class="sn n">3</span><span class="sl a">Deploy</span></div>
 <div class="mid">
 
 <div class="dp"><div class="dh"><span class="dn">1</span><h3>Pick your operating system</h3></div>
@@ -308,22 +307,15 @@ Push this silent command through your RMM tool, Group Policy, or Intune.</div>
 <div class="kr"><div><div class="kl">Organisation key</div><div class="kv" id="k-og">—</div></div><button class="cb" onclick="copyKey(this,'k-og')">Copy</button></div></div>
 
 <div class="dp"><div class="dh"><span class="dn">4</span><h3>Watch your machines come online</h3></div>
-<p style="font-size:12.5px;color:var(--mu);margin-bottom:10px">Each appears within about 60 seconds of install. Your dashboard unlocks when the first one connects.</p>
+<p style="font-size:12.5px;color:var(--mu);margin-bottom:10px">Each appears within about 60 seconds of install.</p>
 <div class="lr" id="w-wait"><span class="sp"></span>Waiting for your first agent to connect…</div>
 <div id="w-list"></div>
-<button class="bt" id="b-dash" style="opacity:.35;pointer-events:none" onclick="openDashboard()">Open my live dashboard →</button></div>
+<button class="bt" id="b-dash" onclick="openDashboard()">← Back to my dashboard</button></div>
 
 <div class="dp card t"><div class="dh"><span class="dn" style="background:var(--tl);color:var(--ti)">?</span><h3>Want us to install it with you?</h3></div>
 <p style="font-size:12.5px;color:var(--mu)">Book a 30-minute remote session and we'll deploy across your machines together on a call. Included in your plan.</p>
 <button class="bt tlb" onclick="window.open(CFG.calendly,'_blank')">Book a deployment session</button>
 <p style="font-size:11px;color:var(--m2);text-align:center;margin-top:9px">or call 647-552-3894</p></div>
-
-<div class="card" style="margin-top:6px;padding:16px 18px">
-<div style="font-size:12px;color:var(--m2);line-height:1.65">
-<b style="color:#fff;font-weight:500">Save your access code</b><br>
-This is how you sign back in to your dashboard. We've also emailed it to you.
-<div class="kr" style="margin-top:10px"><div><div class="kl">Your access code</div><div class="kv" id="k-code">—</div></div><button class="cb" onclick="copyKey(this,'k-code')">Copy</button></div>
-</div></div>
 
 </div></div></div>
 
@@ -346,14 +338,14 @@ This is how you sign back in to your dashboard. We've also emailed it to you.
 <div class="nv" onclick="tab('rp',this)">📄 Reports</div>
 <div class="sg">Account</div>
 <div class="nv" onclick="tab('bi',this)">💳 Billing</div>
-<div class="nv" onclick="go('x3')">＋ Add endpoints</div></div>
+<div class="nv" onclick="enterDeploy()">＋ Add endpoints</div></div>
 
 <div class="dm">
 <div class="tb on" id="t-ov">
 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap;gap:10px">
 <div><h2 style="font-size:21px;margin:0" id="dh-co">Guard status</h2>
 <p style="font-size:12px;color:var(--m2)" id="dh-sub">Loading…</p></div>
-<button class="bt2" onclick="tab('rp',null)">Reports</button></div>
+<button class="bt2" onclick="enterDeploy()">＋ Add endpoints</button></div>
 <div class="sg4">
 <div class="st"><div class="n" id="m-ep">—</div><div class="l">Endpoints protected</div><div class="d" id="m-ep-d">—</div></div>
 <div class="st"><div class="n w" id="m-inc">—</div><div class="l">Open incidents</div><div class="d" id="m-inc-d">—</div></div>
@@ -364,8 +356,10 @@ This is how you sign back in to your dashboard. We've also emailed it to you.
 </div>
 
 <div class="tb" id="t-ep">
-<h2 style="font-size:21px;margin-bottom:4px">My endpoints</h2>
-<p style="font-size:12px;color:var(--m2);margin-bottom:14px" id="ep-sub">—</p>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+<div><h2 style="font-size:21px;margin-bottom:4px">My endpoints</h2>
+<p style="font-size:12px;color:var(--m2)" id="ep-sub">—</p></div>
+<button class="bt2" onclick="enterDeploy()">＋ Add endpoints</button></div>
 <div class="pn2"><div class="pb" id="ep-table"><div class="empty">Loading endpoints…</div></div></div></div>
 
 <div class="tb" id="t-sv">
@@ -427,7 +421,7 @@ This is how you sign back in to your dashboard. We've also emailed it to you.
 
 <!-- LOADING -->
 <div class="sc" id="x-load">
-<div class="load"><div class="ring"></div><p style="color:var(--mu);font-size:14px" id="load-msg">Setting up your account…</p></div></div>
+<div class="load"><div class="ring"></div><p style="color:var(--mu);font-size:14px" id="load-msg">Loading…</p></div></div>
 
 <script>
 const CFG = {
@@ -486,22 +480,8 @@ async function submitSignup(){
   if(cd.length<15) return showErr('e2','Enter a valid card number.');
   clearErr('e2');
   const btn=$('b2'); btn.disabled=true;
-  $('load-msg').textContent='Processing payment and provisioning your workspace…';
+  $('load-msg').textContent='Processing…';
   go('x-load');
-
-  if(CFG.DEMO){
-    setTimeout(()=>{
-      S.code='LMA-'+rnd(4)+'-'+rnd(4);
-      S.installToken=rnd(32);
-      S.acctKey='8f3c2a91d47b6e05c8a2f9b31d6e4a70';
-      S.orgKey=slug(S.company);
-      btn.disabled=false;
-      enterDeploy();
-      demoAgents();
-    },1600);
-    return;
-  }
-
   try{
     const res=await fetch(CFG.base+'/api/signup',{
       method:'POST',
@@ -517,7 +497,6 @@ async function submitSignup(){
     S.code=data.code||''; S.installToken=data.installToken||'';
     S.acctKey=data.acctKey||'—'; S.orgKey=data.orgKey||'—';
     enterDeploy();
-    startPolling();
   }catch(err){
     btn.disabled=false; go('x2');
     showErr('e2','Could not reach the server. Call 647-552-3894 or email shield@lunima.ca.');
@@ -525,11 +504,11 @@ async function submitSignup(){
 }
 
 function enterDeploy(){
-  $('k-ac').textContent=S.acctKey;
-  $('k-og').textContent=S.orgKey;
-  $('k-code').textContent=S.code||'Emailed to you';
+  $('k-ac').textContent=S.acctKey||'—';
+  $('k-og').textContent=S.orgKey||'—';
   setOS(null,S.os);
   go('x3');
+  if(S.installToken) startInstallPolling(S.installToken);
 }
 
 const OSDATA={
@@ -572,31 +551,14 @@ function setOS(el,os){
 
 function downloadAgent(){
   const b=$('d-btn');
-  if(CFG.DEMO){
-    b.textContent='Downloading…';
-    setTimeout(()=>{b.textContent='✓ Downloaded — now run it';
-      setTimeout(()=>b.textContent='↓ Download installer',3000);},900);
+  if(!S.installToken){
+    b.textContent='Setup link missing — call 647-552-3894';
     return;
   }
   window.location.href = CFG.base+'/api/install?token='
     +encodeURIComponent(S.installToken)+'&os='+S.os+'&download=1';
   b.textContent='✓ Downloaded — now run it';
   setTimeout(()=>b.textContent='↓ Download installer',4000);
-}
-
-function startPolling(){
-  if(pollTimer||!S.code) return;
-  pollCount=0;
-  pollTimer=setInterval(async()=>{
-    pollCount++;
-    if(pollCount>CFG.maxPolls){clearInterval(pollTimer);pollTimer=null;return;}
-    try{
-      const res=await fetch(CFG.base+'/api/status?token='+encodeURIComponent(S.code));
-      if(!res.ok) return;
-      const d=await res.json();
-      renderIncomingAgents(d.agents||[]);
-    }catch(e){}
-  },CFG.pollMs);
 }
 
 function renderIncomingAgents(agents){
@@ -608,18 +570,6 @@ function renderIncomingAgents(agents){
     '<div style="font-size:11px;color:var(--m2)">'+esc(a.platform||'—')+
     (a.version?' · agent '+esc(a.version):'')+' · connected</div></div>'+
     '<span class="pl '+(a.online?'o':'w')+'">'+(a.online?'Protected':'Offline')+'</span></div>').join('');
-  const b=$('b-dash'); b.style.opacity='1'; b.style.pointerEvents='auto';
-}
-
-function demoAgents(){
-  const fake=[{hostname:'Workstation 01',platform:'Windows 11 Pro',online:true,version:'3.2.1'},
-              {hostname:'File server',platform:'Windows Server 2022',online:true,version:'3.2.1'},
-              {hostname:'Laptop — management',platform:'Windows 11 Pro',online:true,version:'3.2.1'}];
-  let i=0;
-  const t=setInterval(()=>{
-    if(i>=fake.length){clearInterval(t);return;}
-    renderIncomingAgents(fake.slice(0,++i));
-  },1600);
 }
 
 async function signIn(){
@@ -641,29 +591,24 @@ function openDashboard(){
 async function loadDashboard(){
   $('load-msg').textContent='Loading your live Guard status…';
   go('x-load');
-
   let d;
-  if(CFG.DEMO){
-    await new Promise(r=>setTimeout(r,900));
-    d={company:S.company||'Your company',plan:'Guard '+S.planName,contact:'Siman Gill',phone:'647-552-3894',
-       agents:[{hostname:'Workstation 01',platform:'Windows 11 Pro',online:true,lastSeen:new Date().toISOString(),version:'3.2.1'}],
-       incidents:[],
-       fetchedAt:new Date().toISOString()};
-  } else {
-    try{
-      const res=await fetch(CFG.base+'/api/status?token='+encodeURIComponent(S.code));
-      if(!res.ok){go('x0');return false;}
-      d=await res.json();
-    }catch(e){go('x0');return false;}
-  }
+  try{
+    const res=await fetch(CFG.base+'/api/status?token='+encodeURIComponent(S.code));
+    if(!res.ok){go('x0');return false;}
+    d=await res.json();
+  }catch(e){go('x0');return false;}
 
   renderDashboard(d);
   go('x4');
-  if(!CFG.DEMO && !dashTimer) dashTimer=setInterval(refreshDash,60000);
+  if(!dashTimer) dashTimer=setInterval(refreshDash,60000);
   return true;
 }
 
 function renderDashboard(d){
+  S.acctKey = d.acctKey || S.acctKey;
+  S.orgKey = d.orgKey || S.orgKey;
+  S.installToken = d.installToken || S.installToken;
+
   const agents=d.agents||[], incidents=d.incidents||[];
   const online=agents.filter(a=>a.online).length;
   const open=incidents.filter(i=>(i.status||'').toLowerCase()!=='resolved'&&(i.status||'').toLowerCase()!=='closed').length;
@@ -689,7 +634,7 @@ function renderDashboard(d){
     '<td>'+esc(a.platform||'—')+'</td><td>'+esc(a.version||'—')+'</td>'+
     '<td><span class="pl '+(a.online?'o':'w')+'">'+(a.online?'Protected':'Offline')+'</span></td>'+
     '<td>'+timeAgo(a.lastSeen)+'</td></tr>').join('')+'</tbody></table>'
-    : '<div class="empty">No agents yet. Install the agent to see your machines here.</div>';
+    : '<div class="empty">No agents yet. Click Add endpoints to install your first one.</div>';
 
   $('inc-list').innerHTML = incidents.length ?
     incidents.map(i=>{
@@ -705,10 +650,11 @@ function renderDashboard(d){
     : '<div class="empty">No incidents. That is exactly what you want to see.</div>';
 }
 
-async function refreshDash(){ if(!CFG.DEMO) await loadDashboard(); }
+async function refreshDash(){ await loadDashboard(); }
 
 function signOut(){
   if(dashTimer){clearInterval(dashTimer);dashTimer=null;}
+  if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
   S.code=''; $('i-code').value=''; go('x0');
 }
 
@@ -726,10 +672,21 @@ function copyKey(btn,id){
   setTimeout(()=>btn.textContent=o,1300);
 }
 
-const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-function rnd(n){const b=new Uint8Array(n);crypto.getRandomValues(b);
-  return [...b].map(x=>ALPHA[x%ALPHA.length]).join('');}
-function slug(s){return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'your-company';}
+function startInstallPolling(token){
+  if(pollTimer) return;
+  pollCount = 0;
+  pollTimer = setInterval(async ()=>{
+    pollCount++;
+    if(pollCount > CFG.maxPolls){ clearInterval(pollTimer); pollTimer=null; return; }
+    try{
+      const res = await fetch(CFG.base+'/api/install?token='+encodeURIComponent(token));
+      if(!res.ok) return;
+      const d = await res.json();
+      renderIncomingAgents(d.agents||[]);
+    }catch(e){}
+  }, CFG.pollMs);
+}
+
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function timeAgo(iso){
   if(!iso) return '—';
@@ -750,30 +707,14 @@ async function loadSetupByToken(token){
   go('x-load');
   try{
     const res = await fetch(CFG.base+'/api/install?token='+encodeURIComponent(token));
-    if(!res.ok){ go('x1'); return; }
+    if(!res.ok){ go('x0'); return; }
     const d = await res.json();
     S.acctKey = d.acctKey || '—';
     S.orgKey  = d.orgKey  || '—';
     S.company = d.company || '';
     enterDeploy();
     if(d.agents && d.agents.length) renderIncomingAgents(d.agents);
-    startInstallPolling(token);
-  }catch(e){ go('x1'); }
-}
-
-function startInstallPolling(token){
-  if(pollTimer) return;
-  pollCount = 0;
-  pollTimer = setInterval(async ()=>{
-    pollCount++;
-    if(pollCount > CFG.maxPolls){ clearInterval(pollTimer); pollTimer=null; return; }
-    try{
-      const res = await fetch(CFG.base+'/api/install?token='+encodeURIComponent(token));
-      if(!res.ok) return;
-      const d = await res.json();
-      renderIncomingAgents(d.agents||[]);
-    }catch(e){}
-  }, CFG.pollMs);
+  }catch(e){ go('x0'); }
 }
 
 (function(){
@@ -782,7 +723,7 @@ function startInstallPolling(token){
   const t = p.get('t') || p.get('token');
   if(t){ loadSetupByToken(t); }
   else if(p.get('code')){ S.code = p.get('code').toUpperCase(); loadDashboard(); }
-  else if(p.get('signin') !== null){ go('x0'); }
+  else { go('x0'); }
 })();
 </script>
 </body>
