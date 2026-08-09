@@ -55,6 +55,9 @@ export async function onRequestGet(context) {
       plan: client.plan || 'Lunima Guard',
       contact: client.contact || 'Siman Gill',
       phone: client.phone || '647-552-3894',
+      acctKey: env.HUNTRESS_ACCOUNT_KEY || '',
+      orgKey: client.orgkey || '',
+      installToken: client.installToken || '',
       agents: shaped,
       incidents: incidents.map((i) => ({
         subject: i.subject || i.summary || 'Security event',
